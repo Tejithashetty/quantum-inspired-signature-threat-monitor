@@ -35,21 +35,21 @@ python -m pip install -r requirements.txt
 
 ## Start the live application
 
-Open two terminals in the project folder and activate `.venv` in both.
-
-In terminal 1, start the API:
-
-```cmd
-python -m uvicorn app.main:app --reload
-```
-
-In terminal 2, start the Streamlit interface:
+Start the Streamlit interface from the project root:
 
 ```cmd
 python -m streamlit run streamlit_app.py
 ```
 
-Open the Streamlit URL shown in terminal 2, usually http://localhost:8501. API documentation is at http://127.0.0.1:8000/docs.
+Open the URL shown in the terminal, usually http://localhost:8501. The Streamlit app calls the shared analysis service directly, so it runs by itself locally and on Streamlit Community Cloud.
+
+To also run the JSON API locally, open another activated terminal and run:
+
+```cmd
+python -m uvicorn app.main:app --reload
+```
+
+API documentation is at http://127.0.0.1:8000/docs. The API and Streamlit use the same local SQLite event store and detector service.
 
 Run the project checks with:
 
@@ -89,6 +89,7 @@ The system does not insert generated data into its learning baseline. Detector w
 - Raw message contents are used in memory for signature verification and feature extraction, then discarded. The database stores a keyed HMAC fingerprint instead of the message text, along with signatures, public keys, features, scores, and alerts. The local HMAC secret is generated in `keys/fingerprint.key`, which is excluded from Git. Earlier plaintext demo messages are converted to fingerprints when the API starts.
 - The local fingerprint key is needed to match repeated messages. Keep the `keys` folder private and do not upload it. This is still a student demo, not a guarantee of production-grade privacy.
 - This is a development demo without user authentication, HTTPS, rate limiting, or production data-retention controls. Do not expose it publicly until those protections are added.
+- Streamlit Community Cloud does not guarantee persistence of local file storage. The hosted demo may lose its SQLite history and local fingerprint key after a restart; use a managed database and secret store for persistent deployment.
 
 ## Research contribution
 

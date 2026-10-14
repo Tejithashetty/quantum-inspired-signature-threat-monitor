@@ -5,14 +5,10 @@ from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 
 from app.db import (
-    count_recent_events_for_key,
-    count_recent_repeats,
-    detector_history,
     initialize_db,
     recent_events,
-    save_event,
 )
-from app.detection import analyze_event, extract_features, verify_message
+from app.service import analyze_and_store_event
 
 app = FastAPI(title="Signature Threat Monitor", version="0.2.0")
 
@@ -54,34 +50,7 @@ def dashboard():
 
 @app.post("/api/events")
 def create_event(event: EventInput):
-    verified = verify_message(event.message, event.public_key, event.signature)
-    recent_key_events = count_recent_events_for_key(event.public_key) + 1
-    repeated_events = count_recent_repeats(event.public_key, event.message) + 1
-    features = extract_features(event.message, verified, recent_key_events, repeated_events)
-    history = detector_history(event.public_key)
-    result = analyze_event(features, history)
-    event_id, received_at = save_event(
-        event.message, event.public_key, event.signature, verified, result, features
-    )
-    return {
-        "id": event_id,
-        "verified": verified,
-        "features": features,
-        "detectors": {
-            "statistical_score": result["statistical_score"],
-            "ml_score": result["ml_score"],
-            "ml_status": result["ml_status"],
-            "quantum_inspired_score": result["quantum_score"],
-            "quantum_inspired_note": result["quantum_status"],
-        },
-        "hybrid_score": result["hybrid_score"],
-        "risk_score": round(result["hybrid_score"]),
-        "adaptive_threshold": result["adaptive_threshold"],
-        "threshold_status": result["threshold_status"],
-        "risk_level": result["risk_level"],
-        "alerts": result["alerts"],
-        "received_at": received_at,
-    }
+    return analyze_and_store_event(event.message, event.public_key, event.signature)
 
 
 @app.get("/api/events")

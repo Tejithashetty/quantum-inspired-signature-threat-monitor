@@ -133,8 +133,16 @@ def analyze_event(features, history):
         risk_level = "LOW"
 
     alerts = list(dict.fromkeys(statistical_reasons))
-    if risk_level in {"HIGH", "CRITICAL"} and not alerts:
-        alerts.append(f"Hybrid detector classified this event as {risk_level}")
+    if risk_level != "LOW":
+        # Explain threshold-based classifications too, including MEDIUM events
+        # where none of the individual statistical rules fired.
+        score_explanation = (
+            f"Hybrid score {hybrid_score:.1f} met or exceeded the "
+            f"{threshold_status.lower()} ({threshold:.1f})"
+        )
+        if ml_score is not None:
+            score_explanation += f"; ML anomaly score was {ml_score:.1f}/100"
+        alerts.append(score_explanation)
     if not alerts:
         alerts.append("No detector raised a specific alert")
 

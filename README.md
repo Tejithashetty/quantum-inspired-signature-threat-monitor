@@ -86,10 +86,23 @@ The system does not insert generated data into its learning baseline. Detector w
 ## Security and privacy
 
 - `keys/private_key.pem` stays local and is excluded from Git. Never share or upload it.
-- Raw message contents are used in memory for signature verification and feature extraction, then discarded. The database stores a keyed HMAC fingerprint instead of the message text, along with signatures, public keys, features, scores, and alerts. In local SQLite mode, the HMAC key is generated in `keys/fingerprint.key`; in PostgreSQL mode, it comes from the `FINGERPRINT_KEY` secret.
+- Raw message contents are used in memory for signature verification and feature extraction, then discarded. The database stores a keyed HMAC fingerprint instead of the message text, along with signatures, public keys, features, scores, and alerts. In local SQLite mode, the HMAC key is generated in `keys/fingerprint.key`; in PostgreSQL mode, it comes from the `FINGERPRINT_KEY` secret. A fingerprint is a stable pseudonymous identifier, not anonymization.
 - The fingerprint key is needed to match repeated messages. Keep it private, back it up securely, and do not change it after events have been stored. This is still a student demo, not a guarantee of production-grade privacy.
-- This is a development demo without user authentication, HTTPS, rate limiting, or production data-retention controls. Do not expose it publicly until those protections are added.
+- The Streamlit Community Cloud demo is publicly accessible. It has no user authentication, rate limiting, or production data-retention controls. Submit only made-up test messages and test keys. Do not submit confidential messages, real customer data, or production signatures. Anyone who can open the app can submit events and view the shared event monitor.
 - Streamlit Community Cloud does not guarantee persistence of local file storage. To retain hosted event history, configure a managed PostgreSQL database and set both `DATABASE_URL` and `FINGERPRINT_KEY` as Streamlit secrets. Existing hosted SQLite history is not automatically copied into PostgreSQL.
+
+## Current evaluation notes
+
+Manual live checks completed in the hosted app:
+
+| Scenario | Observed behavior |
+| --- | --- |
+| Valid signed message | Signature verified; low-risk examples scored below the alert threshold. |
+| Message changed after signing | Signature verification failed and the event was raised as high risk. |
+| Repeated valid message | Signature remained valid; repeated-message behavior raised the risk score. |
+| ML warm-up | After enough low-risk valid live events, the app displayed an ML anomaly score. One event had an ML score of 96.2 while its hybrid score stayed below the threshold and its final risk remained LOW. This score is a ranking signal, not a probability; the weighted hybrid decision can differ from an individual detector. |
+
+The burst-rate case has not been manually confirmed. These checks are prototype demonstrations, not a measured scientific benchmark. For a formal evaluation, record the number of events per scenario, expected result, observed result, and false-positive/false-negative counts using made-up data.
 
 ## Configure managed PostgreSQL for Streamlit Community Cloud
 

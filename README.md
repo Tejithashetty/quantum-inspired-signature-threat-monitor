@@ -1,6 +1,6 @@
 # Quantum-Inspired Digital Signature Threat Monitor
 
-A live student research prototype for signed-message verification and behavioral threat scoring. It accepts real submissions through a FastAPI endpoint and Streamlit form, stores events in SQLite, and displays detector results and alerts.
+A live student research prototype for signed-message verification and behavioral threat scoring. It accepts real submissions through a FastAPI endpoint and Streamlit form, stores events in local SQLite for development or managed PostgreSQL when `DATABASE_URL` is configured, and displays detector results and alerts.
 
 ## Requirements
 
@@ -41,7 +41,7 @@ Start the Streamlit interface from the project root:
 python -m streamlit run streamlit_app.py
 ```
 
-Open the URL shown in the terminal, usually http://localhost:8501. The Streamlit app calls the shared analysis service directly, so it runs by itself locally and on Streamlit Community Cloud.
+Open the URL shown in the terminal, usually http://localhost:8501. The Streamlit app calls the shared analysis service directly, so it runs by itself locally and on Streamlit Community Cloud. Without `DATABASE_URL`, it uses a local SQLite file. With `DATABASE_URL`, it uses PostgreSQL.
 
 To also run the JSON API locally, open another activated terminal and run:
 
@@ -49,7 +49,7 @@ To also run the JSON API locally, open another activated terminal and run:
 python -m uvicorn app.main:app --reload
 ```
 
-API documentation is at http://127.0.0.1:8000/docs. The API and Streamlit use the same local SQLite event store and detector service.
+API documentation is at http://127.0.0.1:8000/docs. The API and Streamlit use the same configured event store and detector service.
 
 Run the project checks with:
 
@@ -86,10 +86,26 @@ The system does not insert generated data into its learning baseline. Detector w
 ## Security and privacy
 
 - `keys/private_key.pem` stays local and is excluded from Git. Never share or upload it.
-- Raw message contents are used in memory for signature verification and feature extraction, then discarded. The database stores a keyed HMAC fingerprint instead of the message text, along with signatures, public keys, features, scores, and alerts. The local HMAC secret is generated in `keys/fingerprint.key`, which is excluded from Git. Earlier plaintext demo messages are converted to fingerprints when the API starts.
-- The local fingerprint key is needed to match repeated messages. Keep the `keys` folder private and do not upload it. This is still a student demo, not a guarantee of production-grade privacy.
+- Raw message contents are used in memory for signature verification and feature extraction, then discarded. The database stores a keyed HMAC fingerprint instead of the message text, along with signatures, public keys, features, scores, and alerts. In local SQLite mode, the HMAC key is generated in `keys/fingerprint.key`; in PostgreSQL mode, it comes from the `FINGERPRINT_KEY` secret.
+- The fingerprint key is needed to match repeated messages. Keep it private, back it up securely, and do not change it after events have been stored. This is still a student demo, not a guarantee of production-grade privacy.
 - This is a development demo without user authentication, HTTPS, rate limiting, or production data-retention controls. Do not expose it publicly until those protections are added.
-- Streamlit Community Cloud does not guarantee persistence of local file storage. The hosted demo may lose its SQLite history and local fingerprint key after a restart; use a managed database and secret store for persistent deployment.
+- Streamlit Community Cloud does not guarantee persistence of local file storage. To retain hosted event history, configure a managed PostgreSQL database and set both `DATABASE_URL` and `FINGERPRINT_KEY` as Streamlit secrets. Existing hosted SQLite history is not automatically copied into PostgreSQL.
+
+## Configure managed PostgreSQL for Streamlit Community Cloud
+
+1. Create a PostgreSQL project with a managed provider, such as Supabase.
+2. In the provider dashboard, copy the **session pooler** connection string for the hosted app. Replace its password placeholder with your database password. Keep the completed string private.
+3. Generate a long random fingerprint secret locally. In PowerShell, run `python -c "import secrets; print(secrets.token_urlsafe(32))"` and keep the result private.
+4. In Streamlit Community Cloud, open the app menu, select **Settings → Secrets**, and add:
+
+   ```toml
+   DATABASE_URL = "paste-your-private-postgres-connection-string"
+   FINGERPRINT_KEY = "paste-the-random-secret"
+   ```
+
+5. Save the secrets and let the app restart. On startup, the app creates or updates the `events` table automatically. Submit a made-up signed message, refresh the app, and check that the event remains in the Live monitor.
+
+Never commit database credentials or `FINGERPRINT_KEY` to GitHub. The project `.gitignore` excludes `.streamlit/secrets.toml` for local secrets.
 
 ## Research contribution
 

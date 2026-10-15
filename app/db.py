@@ -263,7 +263,7 @@ def count_recent_repeats(public_key, message, seconds=300):
 def detector_history(public_key, limit=500):
     with connect() as connection:
         rows = _execute(connection, """
-            SELECT features_json, hybrid_score FROM events
+            SELECT features_json, hybrid_score, risk_level FROM events
             WHERE public_key = ? ORDER BY id DESC LIMIT ?
         """, (public_key, limit)).fetchall()
     result = []
@@ -273,5 +273,6 @@ def detector_history(public_key, limit=500):
         except json.JSONDecodeError:
             features = {}
         features["hybrid_score"] = row["hybrid_score"]
+        features["risk_level"] = row["risk_level"]
         result.append(features)
     return result

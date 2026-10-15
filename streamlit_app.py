@@ -60,7 +60,7 @@ with about_tab:
     1. **Ed25519 verification** checks message integrity against the supplied public key and signature.
     2. **Feature extraction** measures message size, key event rate, repeated messages, and verification outcome.
     3. **Statistical analysis** uses transparent rules and a robust baseline from real events.
-    4. **ML analysis** uses Isolation Forest trained on at least 20 prior valid events from this key. It reports warming-up status until then.
+    4. **ML analysis** uses Isolation Forest trained on at least 20 prior valid LOW-risk events from this key. Suspicious events are excluded from training; it reports warming-up status until then.
     5. **Quantum-inspired analysis** scores QUBO-style interactions using classical arithmetic. No quantum computer or quantum advantage is claimed.
     6. **Hybrid scoring and risk classification** combines detector scores and uses an adaptive threshold after enough real history is available.
 

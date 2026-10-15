@@ -62,9 +62,14 @@ def statistical_detector(features, history):
 
 def ml_detector(features, history):
     """Isolation Forest trained only on previously received, validly signed events."""
-    normal_rows = [row for row in history if row.get("signature_invalid", 1) == 0]
+    # A valid signature does not make an event behaviorally normal. Exclude
+    # medium/high-risk records so replay and burst events cannot poison training.
+    normal_rows = [
+        row for row in history
+        if row.get("signature_invalid", 1) == 0 and row.get("risk_level") == "LOW"
+    ]
     if len(normal_rows) < 20:
-        return None, f"Warming up: {20 - len(normal_rows)} more valid events needed for the ML baseline"
+        return None, f"Warming up: {20 - len(normal_rows)} more valid LOW-risk events needed for the ML baseline"
 
     from sklearn.ensemble import IsolationForest
 
@@ -101,8 +106,13 @@ def quantum_inspired_detector(features):
 
 def adaptive_threshold(history):
     """Use previous real hybrid scores when enough are available; otherwise use a stated default."""
-    prior = [float(row["hybrid_score"]) for row in history
-             if row.get("hybrid_score") is not None and row.get("signature_invalid", 1) == 0]
+    prior = [
+        float(row["hybrid_score"])
+        for row in history
+        if row.get("hybrid_score") is not None
+        and row.get("signature_invalid", 1) == 0
+        and row.get("risk_level") == "LOW"
+    ]
     if len(prior) < 10:
         return 40.0, "Default threshold (adaptive threshold warms up after 10 prior valid events)"
     center = median(prior)

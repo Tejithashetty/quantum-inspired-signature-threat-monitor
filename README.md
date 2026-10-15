@@ -76,9 +76,9 @@ The API also accepts JSON at `POST /api/events`; `GET /api/events` returns recen
 1. **Ed25519 verification** checks that the message matches the supplied public key and signature.
 2. **Feature extraction** measures message length, event count per key over one minute, repeated-message count over five minutes, and verification/empty/long-message flags.
 3. **Statistical detector** applies transparent rules and a median/MAD comparison against the key's real message-length history.
-4. **ML detector** trains an Isolation Forest on prior validly signed events from that key. It stays in warm-up until 20 real valid events are available.
+4. **ML detector** trains an Isolation Forest on prior validly signed, LOW-risk events from that key. It stays in warm-up until 20 real low-risk events are available; suspicious but valid events are excluded to reduce baseline poisoning.
 5. **Quantum-inspired detector** evaluates a QUBO-style feature-interaction score using ordinary classical arithmetic. It does not use quantum hardware and makes no quantum-advantage claim.
-6. **Hybrid decision** combines statistical (40%), QUBO-style (30%), and ML (30%) scores. During ML warm-up, active scores are renormalized. The adaptive threshold uses the key's previous 10 valid events; before that, a default of 40 is shown.
+6. **Hybrid decision** combines statistical (40%), QUBO-style (30%), and ML (30%) scores. During ML warm-up, active scores are renormalized. The adaptive threshold uses the key's previous 10 valid LOW-risk events; before that, a default of 40 is shown.
 7. **Risk and alerts** classify events as LOW, MEDIUM, HIGH, or CRITICAL. Both dashboards refresh every five seconds.
 
 The system does not insert generated data into its learning baseline. Detector warm-up uses only events submitted to the application.

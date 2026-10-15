@@ -187,10 +187,13 @@ def initialize_db():
 
 def _migrate_legacy_messages(connection):
     # Replace any plaintext messages from the earlier demo version with keyed fingerprints.
-    legacy_messages = _execute(
-        connection,
-        "SELECT id, message FROM events WHERE message NOT LIKE 'hmac-sha256:%'",
-    ).fetchall()
+    # Filter in Python instead of using SQL LIKE with a '%' wildcard. Psycopg
+    # treats percent signs as parameter markers when a parameter tuple is passed.
+    all_messages = _execute(connection, "SELECT id, message FROM events").fetchall()
+    legacy_messages = [
+        row for row in all_messages
+        if not row["message"].startswith("hmac-sha256:")
+    ]
     for row in legacy_messages:
         _execute(
             connection,
